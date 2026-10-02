@@ -16,6 +16,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const tabs = [
     { href: `/teams/${teamId}/sessions`, label: "📅 Buổi chơi" },
+    { href: `/teams/${teamId}/meals`, label: "🍜 Buổi ăn" },
     { href: `/teams/${teamId}/players`, label: "👥 Lông thủ" },
     { href: `/teams/${teamId}/settings`, label: "⚙️ Cài đặt" },
   ];
