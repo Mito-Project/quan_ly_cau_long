@@ -12,3 +12,7 @@ export type Session = {
   court_price: number; shuttle_price: number; shuttle_count: number;
   note: string | null; is_paid: boolean; paid_at: string | null;
 };
+export type Meal = {
+  id: string; team_id: string; eaten_on: string; title: string | null;
+  total_amount: number; note: string | null; is_paid: boolean; paid_at: string | null;
+};

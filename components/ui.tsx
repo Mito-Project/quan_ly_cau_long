@@ -18,8 +18,8 @@ export function Button({ variant = "primary", className = "", ...p }: BtnProps) 
   );
 }
 
-type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & { label: string };
-export function Field({ label, className = "", ...p }: FieldProps) {
+type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: React.ReactNode };
+export function Field({ label, hint, className = "", ...p }: FieldProps) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-medium text-slate-600">{label}</span>
@@ -27,6 +27,7 @@ export function Field({ label, className = "", ...p }: FieldProps) {
         {...p}
         className={`w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 ${className}`}
       />
+      {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
     </label>
   );
 }
