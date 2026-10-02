@@ -1,4 +1,4 @@
-# Badminton Manager (Next.js + Supabase)
+# Quan ly cau long (Next.js + Supabase)
 
 1. Tạo project Supabase, chạy `supabase/schema.sql` trong SQL Editor.
 2. Copy `.env.local.example` -> `.env.local`, điền URL + anon key.
