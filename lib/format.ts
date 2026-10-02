@@ -19,3 +19,7 @@ export const dateVN = (d: string) =>
 
 export const todayLocal = () =>
   new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+// Tiền ăn mỗi người = tổng / số người, làm tròn lên theo ROUND_TO
+export const mealShare = (total: number, n: number) =>
+  n > 0 ? Math.ceil(total / n / ROUND_TO) * ROUND_TO : 0;

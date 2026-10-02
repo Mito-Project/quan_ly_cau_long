@@ -1,15 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { Player } from "@/lib/types";
 import { money, perPlayer, sessionTotal, todayLocal } from "@/lib/format";
 import { Button, Card, ErrorText, Field } from "@/components/ui";
 
+const HL = "!border-emerald-300 !bg-emerald-50"; // tô màu ô đang dùng giá mặc định
+
 export default function SessionForm({ teamId, sessionId }: { teamId: string; sessionId?: string }) {
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [defaults, setDefaults] = useState({ court: 0, shuttle: 0 });
   const [f, setF] = useState({ played_on: todayLocal(), location: "", court_price: 0, shuttle_price: 0, shuttle_count: 0, note: "" });
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -19,6 +23,9 @@ export default function SessionForm({ teamId, sessionId }: { teamId: string; ses
     (async () => {
       const { data: ps } = await supabase.from("players").select("*").eq("team_id", teamId).order("name");
       setPlayers((ps as Player[]) ?? []);
+      const { data: t } = await supabase.from("teams").select("default_court_price, default_shuttle_price").eq("id", teamId).single();
+      const d = { court: t?.default_court_price ?? 0, shuttle: t?.default_shuttle_price ?? 0 };
+      setDefaults(d);
       if (sessionId) {
         const { data: s } = await supabase.from("sessions").select("*, session_players(player_id)").eq("id", sessionId).single();
         if (s) {
@@ -26,8 +33,7 @@ export default function SessionForm({ teamId, sessionId }: { teamId: string; ses
           setSelected(new Set((s.session_players as { player_id: string }[]).map((x) => x.player_id)));
         }
       } else {
-        const { data: t } = await supabase.from("teams").select("default_court_price, default_shuttle_price").eq("id", teamId).single();
-        if (t) setF((p) => ({ ...p, court_price: t.default_court_price, shuttle_price: t.default_shuttle_price }));
+        setF((p) => ({ ...p, court_price: d.court, shuttle_price: d.shuttle }));
       }
       setReady(true);
     })();
@@ -67,16 +73,42 @@ export default function SessionForm({ teamId, sessionId }: { teamId: string; ses
   if (!ready) return <p className="text-slate-500">Đang tải…</p>;
   const total = sessionTotal(f);
   const num = (k: "court_price" | "shuttle_price" | "shuttle_count") => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: Number(e.target.value) });
+  const noDefaults = defaults.court === 0 && defaults.shuttle === 0;
+
+  const priceHint = (key: "court_price" | "shuttle_price", def: number) =>
+    f[key] === def ? (
+      <span className="text-emerald-600">✔ Đang dùng giá mặc định ({money(def)})</span>
+    ) : (
+      <>
+        Mặc định: {money(def)}{" "}
+        <button type="button" className="font-medium text-emerald-600 underline" onClick={() => setF({ ...f, [key]: def })}>↺ Dùng lại</button>
+      </>
+    );
 
   return (
     <form onSubmit={save} className="space-y-4">
       <h2 className="text-xl font-bold">{sessionId ? "Sửa buổi chơi" : "Tạo buổi chơi"}</h2>
+
+      {!sessionId && (
+        noDefaults ? (
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Team chưa cài giá mặc định. <Link href={`/teams/${teamId}/settings`} className="font-medium underline">Vào Cài đặt</Link> để giá sân và giá cầu tự điền mỗi lần tạo buổi.
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            ✨ Đã tự điền giá mặc định từ Cài đặt: sân <b>{money(defaults.court)}</b>, cầu <b>{money(defaults.shuttle)}</b>/quả. Bạn vẫn có thể sửa cho buổi này.
+          </div>
+        )
+      )}
+
       <Card className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Ngày chơi" type="date" required value={f.played_on} onChange={(e) => setF({ ...f, played_on: e.target.value })} />
           <Field label="Địa điểm / sân" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="VD: Sân Phú Lộc" />
-          <Field label="Giá sân (đ)" type="number" min={0} inputMode="numeric" value={f.court_price} onChange={num("court_price")} />
-          <Field label="Giá cầu (đ / quả)" type="number" min={0} inputMode="numeric" value={f.shuttle_price} onChange={num("shuttle_price")} />
+          <Field label="Giá sân (đ)" type="number" min={0} inputMode="numeric" value={f.court_price} onChange={num("court_price")}
+            className={f.court_price === defaults.court && defaults.court > 0 ? HL : ""} hint={defaults.court > 0 ? priceHint("court_price", defaults.court) : undefined} />
+          <Field label="Giá cầu (đ / quả)" type="number" min={0} inputMode="numeric" value={f.shuttle_price} onChange={num("shuttle_price")}
+            className={f.shuttle_price === defaults.shuttle && defaults.shuttle > 0 ? HL : ""} hint={defaults.shuttle > 0 ? priceHint("shuttle_price", defaults.shuttle) : undefined} />
           <Field label="Số quả cầu đã dùng" type="number" min={0} inputMode="numeric" value={f.shuttle_count} onChange={num("shuttle_count")} />
           <Field label="Ghi chú" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
         </div>
